@@ -39,12 +39,13 @@ const Article = mongoose.model('Article', articlesSchema);
 
 //------------------API LOGIC-------------
 
-//app routes
+//app routes -- target all articles
 app.route("/articles")
 
 .get(function(req, res){
 
-    Article.find(function(err, msg){
+    Article.find({
+    },function(err, msg){
         if (!err) {
             res.send(msg);
         }else{
@@ -75,7 +76,75 @@ app.route("/articles")
 .delete( function (req, res) {
 
     Article.deleteMany({
-        title: 'EJS'
+    }, function(err){
+        if(!err){
+            res.send('Successfully deleted an article.');
+        } else {
+            res.send(err);
+        }
+    })
+});
+
+//app routes -- target specific articles
+app.route("/articles/:articleTitle")
+
+.get(function(req, res){
+
+    Article.findOne({
+        title: req.params.articleTitle
+    },function(err, msg){
+        if (!err) {
+            res.send(msg);
+        }else{
+            res.send('No article match this specific request\n'+ err);
+            console.log('Error: GET ARTICLES \n: ' + err);
+        }
+        
+    })
+
+})
+
+
+.put(function (req, res) {
+
+    // console.log(req.params.articleTitle + '\n' +  req.body.title + '\n' + req.body.content);
+
+    Article.updateOne({
+        title: req.params.articleTitle
+    },{
+        title: req.body.title,
+        content: req.body.content
+    }, 
+    function(err,msg){
+        if(!err){
+            res.send('Successfully updated article:' + req.body.title );
+        } else {
+            res.send(err);
+        }
+    });
+})
+
+
+.patch( function (req, res){
+
+    Article.updateOne({
+        title: req.params.articleTitle
+    },{
+        $set: req.body
+    }, 
+    function(err,msg){
+        if(!err){
+            res.send('Successfully updated article: ' + req.params.articleTitle );
+        } else {
+            res.send(err);
+        }
+    });
+})
+
+.delete( function (req, res) {
+
+    Article.deleteMany({
+        title: req.params.articleTitle
     }, function(err){
         if(!err){
             res.send('Successfully deleted an article.');

@@ -12,6 +12,7 @@ const Redis = require('redis');
 
 //-----------------IMPORT JS FILES-----------
 const secrets = require('./secrets');
+const res = require('express/lib/response');
 
 
 
@@ -31,18 +32,18 @@ const Article = mongoose.model('Article', articlesSchema);
 
 //-------------Redis----------------------------
 //---------------CLOUD REDIS------------------------------------
-const redisClient = Redis.createClient({
-    //When commented data will be saved on local Redis instance (there should be much faster response)
-    url: process.env.REDIS_URL,
-    password: process.env.REDIS_PASSWORD,
-    legacyMode: true            //Need this 1 -this is connected
-});
+// const redisClient = Redis.createClient({
+//     //When commented data will be saved on local Redis instance (there should be much faster response)
+//     url: process.env.REDIS_URL,
+//     password: process.env.REDIS_PASSWORD,
+//     legacyMode: true            //Need this 1 -this is connected
+// });
 //--------------------------------------------------------
 
 //---------------LOCAL REDIS------------------------------
-// const redisClient = Redis.createClient({
-//     legacyMode: true
-// });
+const redisClient = Redis.createClient({
+    legacyMode: true
+});
 //--------------------------------------------------------
 
 redisClient.on('error', err => {
@@ -229,6 +230,7 @@ function getOrSetCache(key, callback){
             } else {
                 console.log('Cache MISS');
                 const freshData = await callback()
+                // resolve(freshData)
                 redisClient.set(key, JSON.stringify(freshData))
                 resolve(freshData)
             }

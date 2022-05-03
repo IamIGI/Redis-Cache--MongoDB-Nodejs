@@ -2,8 +2,7 @@
 
 @hostname = http://localhost:5000/articles
 
-get {{hostname}}
-
+get http://localhost:5000/articles
 ###
 get {{hostname}}/React
 

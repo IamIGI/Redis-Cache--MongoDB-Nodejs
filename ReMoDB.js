@@ -1,32 +1,22 @@
 //------------------IMPORT--------------
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const _ = require('lodash');
 const mongoose = require('mongoose');
+//For Redis-----
+const axios = require('axios');
+const cors = require('cors');
+const Redis = require('redis');
 
 //-----------------IMPORT JS FILES-----------
 const secrets = require('./secrets');
 
 
-//------------------SERVER CONFIG--------------
-const app = express();
-app.set('view engine', 'ejs');
-app.use(bodyParser.urlencoded({
-    extended: true
-}))
-app.use(express.static('public'));
-LAN_PORT=5000;
-
-let port = process.env.PORT; //use the port form heroku website
-if (port == null || port ==''){
-    port = LAN_PORT;
-}
-app.use(cors())
-
 
 //------------------DATABASE CONFIG-------------
-//-----------MongoDB------------
+//-------------------MongoDB--------------
 mongoose.connect(secrets.mongoDB_connect, 
     {useNewUrlParser: true}   //mute extra  mongodb errors
     );
@@ -62,22 +52,59 @@ redisClient.on('error', err => {
 redisClient.connect();          //Need this 2  - this is connected
 
 
+//------------------SERVER CONFIG--------------
+const app = express();
+app.set('view engine', 'ejs');
+app.use(bodyParser.urlencoded({
+    extended: true
+}))
+app.use(express.static('public'));
+LAN_PORT=5000;
 
+let port = process.env.PORT; //use the port form heroku website
+if (port == null || port ==''){
+    port = LAN_PORT;
+}
+app.use(cors())
 
 
 //------------------API LOGIC-------------
 
+
+app.get('/dataFromDB-ALL', async( req, res) => {
+
+    // const query = req.query.zapytanie;
+    const articles = await getOrSetCache('dataALL', async () => {
+        const { data } = await axios.get(
+            'http://localhost:5000/articles'
+        )
+        return data
+    })
+    res.json(articles)
+})
+
+app.get('/dataFromDB-CHOOSE', async( req, res) => {
+
+    const tittle = req.query.tittle;
+    const article = await getOrSetCache('data' + tittle, async () => {
+        const { data } = await axios.get(
+            'http://localhost:5000/articles/' + tittle
+        )
+        return data
+    })
+    res.json(article)
+})
+
 //app routes -- target all articles
 app.route("/articles")
-
-.get(function(req, res){
+.get( async (req, res)=> {
 
     Article.find({
     },function(err, msg){
         if (!err) {
-            res.send(msg);
+            res.json(msg);
         }else{
-            res.send(err);
+            res.json(err);
             console.log('Error: GET ARTICLES \n: ' + err);
         }
         
@@ -191,7 +218,29 @@ app.route("/articles/:articleTitle")
     })
 });
 
+//----------------Redis function (Check if element exist in Redis cache) ----
+function getOrSetCache(key, callback){
+    return new Promise((resolve, reject) => {
+        redisClient.get(key, async (error, data) => {
+            if (error) return reject(error)
+            if (data != null) {
+                console.log('Cache HIT');
+                return resolve(JSON.parse(data))
+            } else {
+                console.log('Cache MISS');
+                const freshData = await callback()
+                redisClient.set(key, JSON.stringify(freshData))
+                resolve(freshData)
+            }
+            
+        })
+    })
+}
 
+
+
+
+//------------------SERVER CONFIG ----------------------
 app.listen(port, function(){
     console.log('Sever has started successfully on port: ' + port);
 })

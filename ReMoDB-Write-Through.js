@@ -117,16 +117,25 @@ app.route("/articles")
 
     // WRITE-THROUGH policy, save to Redis, then save to MongoDB
     const tittle = req.body.title;
-    redisClient.set('data' + tittle, JSON.stringify(req.body.content))  // <--- Save to Redis
+    key = 'data' + tittle
+
+    redisClient.get(key, async (error, data) => {
+        if (error) console.log(error);
+        if (data != null) {
+            console.log('Cache HIT (data exists)');
+        } else {
+            console.log('Cache MISS (added data)');
+            redisClient.set(key, JSON.stringify(req.body.content))    // <-- Save to Redis
+        }
+        
+    })
+
 
     const newArticle = new Article({
         title: req.body.title,
         content: req.body.content
     })
     
-    // console.log(newArticle.content);
-
-
     newArticle.save(function(err){                                      // <--- Save to MongoDB
         if(!err){
             res.send('Successfully added a new article.');

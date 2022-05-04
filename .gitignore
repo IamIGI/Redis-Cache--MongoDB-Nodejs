@@ -1,11 +1,12 @@
 # Private
+node_modules
 ignore_GIT
 private
 secrets.js
 client_secret_google.json
 Redis_connection.txt
 TestData.json
-node_modules
+
 
 
 # Logs

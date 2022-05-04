@@ -115,11 +115,7 @@ app.route("/articles")
 
 .post(function (req, res) {
 
-
-
-
-
-    // WRITE-THROUGH policy, save to Redis, then save to MongoDB
+    // WRITE-BACK policy, save to Redis, then save to MongoDB when statement will be true
     const tittle = req.body.title;
     key = 'data' + tittle
 

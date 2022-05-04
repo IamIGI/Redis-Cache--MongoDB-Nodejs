@@ -74,7 +74,6 @@ app.use(cors())
 
 app.get('/dataFromDB-ALL', async( req, res) => {
     key = 'dataALL'
-    // const query = req.query.zapytanie;
     const articles = await getOrSetCache(key, async () => {
         const { data } = await axios.get(
             'http://localhost:5000/articles'
@@ -116,22 +115,19 @@ app.route("/articles")
 
 .post(function (req, res) {
 
-
-    
-    console.log(req.headers['content-type']);
-    console.log(req.body.title);
-
-
+    // WRITE-THROUGH policy, save to Redis, then save to MongoDB
+    const tittle = req.body.title;
+    redisClient.set('data' + tittle, JSON.stringify(req.body.content))  // <--- Save to Redis
 
     const newArticle = new Article({
         title: req.body.title,
         content: req.body.content
     })
     
-    console.log(newArticle.content);
+    // console.log(newArticle.content);
 
 
-    newArticle.save(function(err){
+    newArticle.save(function(err){                                      // <--- Save to MongoDB
         if(!err){
             res.send('Successfully added a new article.');
         } else {
